@@ -1,0 +1,32 @@
+version: "3"
+
+volumes:
+  nifi_conf:
+
+services:
+  nifi-worker:
+    container_name: nifi-worker
+    build:
+      context: bare_nifi/
+      dockerfile: Dockerfile
+    command: "bash -c /home/nifi/conf/registry/startup_conf.sh"
+    volumes:
+      - nifi_conf:/opt/nifi/nifi-current/conf/
+      - ./bare_nifi/conf/:/home/nifi/conf/
+      - ./bare_nifi/extensions/:/opt/nifi/nifi-current/extensions/
+    ports:
+      - 8052:8080
+    restart: unless-stopped
+
+  nifi-registry:
+    container_name: nifi-registry
+    build:
+      context: nifi-registry/
+      dockerfile: Dockerfile
+    ports:
+      - 18081:18080
+    restart: unless-stopped
+
+
+
+

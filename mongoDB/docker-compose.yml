@@ -1,0 +1,52 @@
+version: "3.3"
+
+networks:
+  default:
+    external: true
+    name: nifi_default
+
+volumes:
+  keys:
+  logs:
+  db-certs:
+  web-certs:
+
+secrets:
+  charts-mongodb-uri:
+    external: true
+
+services:
+  mongo:
+    image: mongo:4.1.1
+    container_name: mongoDB
+    restart: on-failure
+    command: --wiredTigerCacheSizeGB 3
+    ports:
+      # Charts db is available under port 27018 to not block the default mongo port
+      - "6082:8081"
+      - "27018:27017"
+    volumes:
+      - ./data/db:/data/db
+
+#  charts:
+#    build:
+#      context: './charts'
+#      args:
+#        - EMAIL=admin@example.com
+#        - PASSWORD=StrongPassw0rd
+#    hostname: charts
+#    ports:
+#      - 8080:80
+#    environment:
+#      CHARTS_SUPPORT_WIDGET_AND_METRICS: 'on'
+#      CHARTS_MONGODB_URI: 'mongodb://mongoDB:27017'
+#    volumes:
+#      - keys:/mongodb-charts/volumes/keys
+#      - logs:/mongodb-charts/volumes/logs
+#      - db-certs:/mongodb-charts/volumes/db-certs
+#      - web-certs:/mongodb-charts/volumes/web-certs
+#    depends_on:
+#      - mongo
+#    container_name: charts
+#
+#

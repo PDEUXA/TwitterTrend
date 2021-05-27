@@ -1,0 +1,15 @@
+{
+  "name": "MongoSinkTwitter",
+  "config": {
+    "connector.class": "com.mongodb.kafka.connect.MongoSinkConnector",
+    "topics": "HASHTAG_COUNT_1HR",
+    "connection.uri": "mongodb://mongoDB:27017",
+    "database": "twitter",
+    "collection": "stream",
+    "document.id.strategy": "com.mongodb.kafka.connect.sink.processor.id.strategy.PartialValueStrategy",
+    "document.id.strategy.overwrite.existing": "true",
+    "document.id.strategy.uuid.format": "binary",
+    "document.id.strategy.partial.value.projection.type": "allowlist",
+    "document.id.strategy.partial.value.projection.list": "TAG_NAME,WINDOW_START"
+  }
+}

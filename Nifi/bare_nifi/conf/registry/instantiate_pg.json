@@ -1,0 +1,19 @@
+{
+  "revision": {
+        "clientId": "a3a8ceff-0179-1000-861b-57ad9e6dedfe",
+    "version": 0
+  },
+  "disconnectedNodeAcknowledged": false,
+  "component": {
+    "position": {
+      "x": 0,
+      "y": 0
+    },
+    "versionControlInformation": {
+      "registryId": "a419ad1d-0179-1000-68b5-6f3ca4feddbb",
+      "bucketId": "4138bd7b-e165-408f-8cb3-771416e38428",
+      "flowId": "99558297-215e-49bb-8d3a-3d9a23f37e59",
+      "version": 2
+    }
+  }
+}

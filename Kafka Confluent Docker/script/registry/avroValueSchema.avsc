@@ -1,0 +1,28 @@
+{
+  "name": "nifiRecord",
+  "namespace": "org.apache.nifi",
+  "type": "record",
+  "fields": [
+    {
+      "name": "id",
+      "type": [
+        "null",
+        "long"
+      ]
+    },
+    {
+      "name": "created_at",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "tag",
+      "type": [
+        "null",
+        "string"
+      ]
+    }
+  ]
+}

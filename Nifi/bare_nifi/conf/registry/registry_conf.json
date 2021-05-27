@@ -1,0 +1,12 @@
+{
+  "revision": {
+    "clientId": "a3a8ceff-0179-1000-861b-57ad9e6dedfe",
+    "version": 0
+  },
+  "disconnectedNodeAcknowledged": false,
+  "component": {
+    "name": "registry_docker",
+    "uri": "http://nifi-registry:18080",
+    "description": "registry_docker"
+  }
+}
