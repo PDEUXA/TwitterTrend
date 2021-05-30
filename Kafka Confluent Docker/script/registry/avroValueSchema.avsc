@@ -4,6 +4,13 @@
   "type": "record",
   "fields": [
     {
+      "name": "lang",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
       "name": "id",
       "type": [
         "null",

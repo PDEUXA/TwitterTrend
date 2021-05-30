@@ -8,6 +8,6 @@ done
 
 curl -X "POST" "http://ksqldb-server:8088/ksql" \
      -d $'{
-  "ksql": "CREATE STREAM twitter_stream (id BIGINT, created_at STRING, tag STRING) WITH (kafka_topic=\'twitter\',timestamp=\'created_at\',timestamp_format=\'EEE MMM dd HH:mm:ss +0000 yyyy\', value_format=\'avro\');",
+  "ksql": "CREATE STREAM twitter_stream (id BIGINT, created_at STRING, tag STRING, lang STRING) WITH (kafka_topic=\'twitter\',timestamp=\'created_at\',timestamp_format=\'EEE MMM dd HH:mm:ss +0000 yyyy\', value_format=\'avro\');",
   "streamsProperties": {}
 }'

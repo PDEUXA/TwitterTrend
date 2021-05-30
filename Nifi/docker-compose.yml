@@ -9,7 +9,7 @@ services:
     build:
       context: bare_nifi/
       dockerfile: Dockerfile
-    command: "bash -c /home/nifi/conf/registry/startup_conf.sh"
+    command: "bash -c /home/nifi/conf/registry/startup_conf.sh/home/nifi/conf/registry/startup_conf.sh"
     volumes:
       - nifi_conf:/opt/nifi/nifi-current/conf/
       - ./bare_nifi/conf/:/home/nifi/conf/

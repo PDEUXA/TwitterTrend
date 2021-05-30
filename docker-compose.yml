@@ -1,12 +1,126 @@
----
-version: '2'
+version: "3.3"
 
 networks:
   default:
     external: true
-    name: nifi_default
+    name: Twitter
+
+volumes:
+  hadoop_namenode:
+  hadoop_datanode:
+  hadoop_datanode2:
+  hadoop_historyserver:
+  nifi_conf:
 
 services:
+  mongo:
+    image: mongo:4.1.1
+    container_name: mongoDB
+    command: --wiredTigerCacheSizeGB 3
+    ports:
+      - 27017:27017
+    volumes:
+      - ./mongoDB/data/db:/data/db
+
+  nifi-worker:
+    container_name: nifi-worker
+    build:
+      context: ./Nifi/bare_nifi/
+      dockerfile: Dockerfile
+    command: "bash -c /home/nifi/conf/registry/startup_conf.sh"
+    volumes:
+      - nifi_conf:/opt/nifi/nifi-current/conf/
+      - ./Nifi/bare_nifi/conf/:/home/nifi/conf/
+      - ./Nifi/bare_nifi/extensions/:/opt/nifi/nifi-current/extensions/
+    ports:
+      - 8052:8080
+
+  nifi-registry:
+    container_name: nifi-registry
+    build:
+      context: ./Nifi/nifi-registry/
+      dockerfile: Dockerfile
+    ports:
+      - 18081:18080
+
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    ports:
+      - 9870:9870
+      - 9005:9000
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./hadoop.env
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode
+    ports:
+      - 9864:9864
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    env_file:
+      - ./hadoop.env
+
+  datanode2:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode2
+    volumes:
+      - hadoop_datanode2:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    env_file:
+      - ./hadoop.env
+
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    container_name: resourcemanager
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode:9864 datanode2:9864"
+    env_file:
+      - ./hadoop.env
+
+  historyserver:
+    image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
+    container_name: historyserver
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode:9864 datanode2:9864 resourcemanager:8088"
+    volumes:
+      - hadoop_historyserver:/hadoop/yarn/timeline
+    env_file:
+      - ./hadoop.env
+
+  hive-server:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-server
+    env_file:
+      - ./hadoop.env
+    environment:
+      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore/metastore"
+      SERVICE_PRECONDITION: "hive-metastore:9083"
+    ports:
+      - "10000:10000"
+
+  hive-metastore:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-metastore
+    env_file:
+      - ./hadoop.env
+    command: /opt/hive/bin/hive --service metastore
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870 datanode:9864 datanode2:9864 hive-metastore-postgresql:5432"
+    ports:
+      - "9083:9083"
+
+  hive-metastore-postgresql:
+    image: bde2020/hive-metastore-postgresql:2.3.0
+
   zookeeper:
     image: confluentinc/cp-zookeeper:6.1.1
     hostname: zookeeper
@@ -24,7 +138,7 @@ services:
     depends_on:
       - zookeeper
     volumes:
-      - ./script/broker/:/usr/script/broker:ro
+      - ./Kafka Confluent Docker/script/broker/:/usr/script/broker:ro
     entrypoint: "bash -c /etc/confluent/docker/run &"
     ports:
       - "9092:9092"
@@ -54,7 +168,7 @@ services:
     hostname: schema-registry
     container_name: schema-registry
     volumes:
-      - ./script/registry/:/usr/script/registry:ro
+      - ./Kafka Confluent Docker/script/registry/:/usr/script/registry:ro
     entrypoint: "bash -c /etc/confluent/docker/run"
     depends_on:
       - broker
@@ -82,7 +196,7 @@ services:
     ports:
       - "8083:8083"
     volumes:
-      - ./script/connect/:/usr/script/connect:ro
+      - ./Kafka Confluent Docker/script/connect/:/usr/script/connect:ro
     environment:
       CONNECT_BOOTSTRAP_SERVERS: 'broker:29092'
       CONNECT_REST_ADVERTISED_HOST_NAME: connect
@@ -98,7 +212,6 @@ services:
       CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
       CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
       CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
-      # CLASSPATH required due to CC-2422
       CLASSPATH: /usr/share/java/monitoring-interceptors/monitoring-interceptors-6.1.1.jar
       CONNECT_PRODUCER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
       CONNECT_CONSUMER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
@@ -115,7 +228,7 @@ services:
     ports:
       - "8088:8088"
     volumes:
-        - ./script/ksql/:/usr/script/ksql:ro
+        - ./Kafka Confluent Docker/script/ksql/:/usr/script/ksql:ro
     environment:
       KSQL_CONFIG_DIR: "/etc/ksql"
       KSQL_BOOTSTRAP_SERVERS: "broker:29092"
@@ -130,50 +243,4 @@ services:
       KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: 'true'
       KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: 'true'
 
-  control-center:
-    image: confluentinc/cp-enterprise-control-center:6.1.1
-    hostname: control-center
-    container_name: control-center
-    depends_on:
-      - broker
-      - schema-registry
-      - connect
-      - ksqldb-server
-    ports:
-      - "9021:9021"
-    environment:
-      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker:29092'
-      CONTROL_CENTER_CONNECT_CLUSTER: 'connect:8083'
-      CONTROL_CENTER_KSQL_KSQLDB1_URL: "http://ksqldb-server:8088"
-      CONTROL_CENTER_KSQL_KSQLDB1_ADVERTISED_URL: "http://localhost:8088"
-      CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
-      CONTROL_CENTER_REPLICATION_FACTOR: 1
-      CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
-      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
-      CONFLUENT_METRICS_TOPIC_REPLICATION: 1
-      PORT: 9021
 
-  ksqldb-cli:
-    image: confluentinc/cp-ksqldb-cli:6.1.1
-    container_name: ksqldb-cli
-    depends_on:
-      - broker
-      - connect
-      - ksqldb-server
-    entrypoint: /bin/sh
-    tty: true
-
-  rest-proxy:
-    image: confluentinc/cp-kafka-rest:6.1.1
-    depends_on:
-      - broker
-      - schema-registry
-    ports:
-      - 8082:8082
-    hostname: rest-proxy
-    container_name: rest-proxy
-    environment:
-      KAFKA_REST_HOST_NAME: rest-proxy
-      KAFKA_REST_BOOTSTRAP_SERVERS: 'broker:29092'
-      KAFKA_REST_LISTENERS: "http://0.0.0.0:8082"
-      KAFKA_REST_SCHEMA_REGISTRY_URL: 'http://schema-registry:8081'
